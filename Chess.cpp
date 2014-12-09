@@ -72,9 +72,6 @@ class ChessBoard {
         /** Indication of what type of piece this is, also an index into
             the mesh list. */
         PieceType type;
-
-        bool drawNow;
-        
     };
 
     /** Linear list of objects in the scene. */
@@ -92,13 +89,9 @@ class ChessBoard {
     private:
         //the pointer to the chessboard
         ChessBoard *p;
-        //(midCol, midRow) is the coordinate the knight' turn point
-        int midCol;
-        int midRow;
-        // the percent of time before the knight turn its direction
-        float turn;
+        float y;
     public:
-        Knight_Move(int i, int x1, int z1, int x2,int z2, int x3,int z3,MOVE_TYPE type,ChessBoard *p1){
+        Knight_Move(int i, int x1, int z1, int x2,int z2,MOVE_TYPE type,ChessBoard *p1){
             index = i;
             sCol = x1;
             sRow = z1;
@@ -106,12 +99,7 @@ class ChessBoard {
             dRow = z2;
             moveType = type;
             p = p1;
-            midCol = x3;
-            midRow = z3;
-            if(abs(midCol - sCol) == 1)
-                turn = 1.0 / 3;
-            else
-                turn = 2.0 / 3;
+            y = -sqrt(5) / 2;
         }
         void draw(double t){
             glPushMatrix();
@@ -121,16 +109,12 @@ class ChessBoard {
        }
        //step function
        void step(double t){
-           if(t < turn){
-               x = sCol +  t * (midCol - sCol);
-               z = sRow +  t * (midRow - sRow);
-           }else{
-               x = midCol +  (t - turn) * (dCol - midCol);
-               z = midRow +  (t - turn) * (dRow - midRow);
-           }
+           x = sCol +  t * (dCol - sCol);
+           z = sRow +  t * (dRow - sRow);
            Object &obj = p->objectList[index];
-           obj.trans = Matrix::translate( x + 0.5, 0, z + 0.5 );
-
+           y = 5.0 / 4 - (sqrt(5) * t - sqrt(5) / 2) * (sqrt(5) * t - sqrt(5) / 2);
+           obj.trans = Matrix::translate( x + 0.5, y, z + 0.5 );
+           
            // Spin around pieces on side 1.
            if ( obj.side == 1 )
                obj.trans = obj.trans * Matrix::rotateY( 180 );
@@ -139,7 +123,6 @@ class ChessBoard {
        void undo(){
            swap(sCol,dCol);
            swap(sRow,dRow);
-           turn  = 1.0 - turn;
        }
        //finish a movement
        void finish(){
@@ -490,7 +473,10 @@ class ChessBoard {
             }
 
             Object &obj = objectList[ i ];
-            glPushName(i);
+            if(objectList[i].type == CROSS)
+                glPushName(-1);
+            else
+                glPushName(i);
             glPushMatrix();
             obj.trans.glMult();
             meshList[ objectList[ i ].type ]->draw();
@@ -600,7 +586,6 @@ class ChessBoard {
         // Put it into the chess board at the right spot.
         obj.col = col;
         obj.row = row;
-        obj.drawNow = true;
         objectList.push_back( obj );
         board[ col ][ row ] = objectList.size() - 1;
     }
@@ -951,7 +936,7 @@ public:
                     }
                     int i= wx, j = wz;
                     if(objectList[selection].type != KNIGHT){
-                        if((i != sRow && j != sCol) || (i == sRow && j == sCol))
+                        if(i == sRow && j == sCol)
                             return;
                         dRow = i;
                         dCol = j;
@@ -979,7 +964,7 @@ public:
                         dCol = j;
                         createPiece(CROSS, 0, dRow, dCol);
                         Move *p = new Knight_Move(selection,sRow,sCol,
-                                    dRow,dCol, sRow, dCol, FIRST,this);
+                                    dRow,dCol, FIRST,this);
                         int ert = glutGet( GLUT_ELAPSED_TIME );
                         p->setDuration(500 * 3);
                     
