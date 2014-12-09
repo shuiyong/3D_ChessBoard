@@ -872,6 +872,7 @@ public:
             sCol = activeList[activeList.size() - 1].second->dRow;
             dRow = sRow;
             dCol = sCol;
+            createPiece(CROSS, 0, dRow, dCol);
             board[sRow][sCol] = activeList[activeList.size() - 1].second->index;
             board[activeList[activeList.size() - 1].second->
                 sCol][activeList[activeList.size() - 1].second->sRow] = EMPTY_CELL;
@@ -954,12 +955,14 @@ public:
                             return;
                         dRow = i;
                         dCol = j;
+                        createPiece(CROSS, 0, dRow, dCol);
                         Move *p = new Other_Move(selection,sRow,sCol,dRow,dCol,FIRST,this);
                         int ert = glutGet( GLUT_ELAPSED_TIME );
                         p->setDuration(500 * (abs(sRow - dRow) + abs(sCol -dCol) ));
                     
                         finishAllMove();
                         activeList.push_back(pair<int, Move *>(ert,p));
+                        
                         dRow = i;
                         dCol = j;
                         board[sRow][sCol] = EMPTY_CELL;
@@ -974,6 +977,7 @@ public:
                     
                         dRow = i;
                         dCol = j;
+                        createPiece(CROSS, 0, dRow, dCol);
                         Move *p = new Knight_Move(selection,sRow,sCol,
                                     dRow,dCol, sRow, dCol, FIRST,this);
                         int ert = glutGet( GLUT_ELAPSED_TIME );
@@ -1046,6 +1050,7 @@ public:
                         undoList.push_back( activeList[ i ].second );
                     activeList[i].second->finish();
                     activeList.erase( activeList.begin() + i );
+                    objectList.erase(objectList.begin() + objectList.size() - 1);
                     
                 } else {
                     activeList[ i ].second->step( t );
