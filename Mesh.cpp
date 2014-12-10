@@ -3,6 +3,12 @@
 * Programming Assignment 6 ChessMate II the Sqeual
 * Author: Yong Shui, Peter Smrcek
 * Due: Dec 9th,2014
+* version: submission_1.1
+* The portions we have completed
+* 1.	Textured Pieces
+* 2.	Reflective Board
+* 3.	Piece Animation
+* 4.	Piece Movement
 */
 #include "Mesh.h"
 #ifdef __APPLE_CC__
@@ -143,7 +149,7 @@ Mesh :: Mesh( char const *filename ) {
 Mesh :: ~Mesh() {
 }
 
-void Mesh :: draw() {
+void Mesh :: draw(int side) {
     for(int i = 0; i < flist->size(); i++){
         glBegin(GL_POLYGON);
             for(int j = 0; j < flist->at(i).size(); j++){
@@ -152,7 +158,10 @@ void Mesh :: draw() {
                 pair<float, float> mp = tlist->at(tmap->at(i)[j]);
                 
                 glNormal3f(vc1.x,vc1.y,vc1.z);
-                glTexCoord2f(mp.first, mp.second);
+                if(side == 0)
+                    glTexCoord2f(mp.first, mp.second);
+                else
+                    glTexCoord2f(mp.first, mp.second-0.5);
                 glVertex3f(vc.x, vc.y, vc.z);
             }
         glEnd();

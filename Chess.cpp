@@ -3,7 +3,7 @@
 * Programming Assignment 6 ChessMate II the Sqeual
 * Author: Yong Shui, Peter Smrcek
 * Due: Dec 9th,2014
-* version: submission1.0
+* version: submission_1.1
 * The portions we have completed
 * 1.	Textured Pieces
 * 2.	Reflective Board
@@ -37,19 +37,13 @@ using namespace std;
  */
 float lightPosition[4] = { 1.0f, 18.0f, 1.0f, 1.0f };
 GLfloat no_mat[] = { 0.0, 0.0, 0.0, 1.0 };   
-GLfloat mat_ambient[] = { 0.7, 0.7, 0.4, 1.0 };   
-GLfloat mat_ambient_color[] = { 0.7, 0.7, 0.4, 1.0 };   
-GLfloat mat_diffuse1[] = { 0.0, 0.4, 0.2, 1.0 };   
-GLfloat mat_diffuse2[] = { 0.8, 0.0, 0.8, 1.0 };  
+GLfloat mat_ambient[] = { 0.7, 0.7, 0.7, 1.0 };   
+GLfloat mat_diffuse[] = { 0.7, 0.7, 0.7, 1.0 };   
+GLfloat mat_specular[] = { 1.0, 1.0, 1.0, 1.0 };  
+GLfloat mat_emission[] = { 0.4, 0.4, 0.4, 1.0 };  
 
-GLfloat mat_diffuse3[] = { 1, 0.3, 1, 1.0 };   
-GLfloat mat_diffuse4[] = { 0, 0.7, 0.2, 1.0 }; 
-
-GLfloat mat_specular[] = { 1.0, 1.0, 1.0, 1.0 };   
 GLfloat no_shininess[] = { 0.0 };   
 GLfloat low_shininess[] = { 5.0 };   
-GLfloat high_shininess[] = { 100.0 };   
-GLfloat mat_emission[] = {0.3, 0.2, 0.2, 0.0};
 
 
 class ChessBoard {
@@ -57,7 +51,8 @@ class ChessBoard {
     enum PieceType { PAWN, ROOK, KNIGHT, BISHOP, QUEEN, KING, 
                      // Not really a piece, but it gets an index anyway.
                      CROSS };
-
+    //the number of pieces one side
+    static const int NUM_OF_PIECE = 16;
     /** Record for an individual object in our scene. */
     struct Object {
         /** Transformation for the model. */
@@ -102,10 +97,6 @@ class ChessBoard {
             y = -sqrt(5) / 2;
         }
         void draw(double t){
-            glPushMatrix();
-            p->objectList[index].trans.glMult();
-            p->meshList[p->objectList[index].type]->draw();
-            glPopMatrix();
        }
        //step function
        void step(double t){
@@ -113,6 +104,7 @@ class ChessBoard {
            z = sRow +  t * (dRow - sRow);
            Object &obj = p->objectList[index];
            y = 5.0 / 4 - (sqrt(5) * t - sqrt(5) / 2) * (sqrt(5) * t - sqrt(5) / 2);
+           y *= 1.5;
            obj.trans = Matrix::translate( x + 0.5, y, z + 0.5 );
            
            // Spin around pieces on side 1.
@@ -166,10 +158,6 @@ class ChessBoard {
             p = p1;
         }
         void draw(double t){
-            glPushMatrix();
-            p->objectList[index].trans.glMult();
-            p->meshList[p->objectList[index].type]->draw();
-            glPopMatrix();
        }
         //step for animation
         void step(double t){
@@ -341,34 +329,41 @@ class ChessBoard {
         // draw only where stencil's value is 1
         glStencilFunc(GL_EQUAL, 1, 0xFF);
         
+        glEnable(GL_TEXTURE_2D);
+        glBindTexture(GL_TEXTURE_2D, _textureId);
+        glEnable( GL_DEPTH_TEST );
+        glEnable(GL_LIGHTING);
+        glDisable( GL_BLEND );
         //draw reflective pieces
         glPushMatrix();
         // flip the pieces
         Matrix::scale(1, -1, 1).glMult();
-        // draw the pieces
+        glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT, mat_ambient);   
+        glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, mat_diffuse);   
+        glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, mat_specular);   
+        glMaterialfv(GL_FRONT_AND_BACK, GL_EMISSION, mat_emission);   
+        // Draw everything on the board.
+        glMaterialfv(GL_FRONT, GL_SHININESS, no_shininess); 
         for ( int i = 0; i < objectList.size(); i++ ) {
-            if(i < objectList.size() / 2)
-                glColor4f(0.8,0,0.8,0.4);
-            else
-                glColor4f(0.0,0.4,0.2,0.4);
-            
+                        
             // Apply the object's transformation.
             glPushMatrix();
             objectList[ i ].trans.glMult();
             
             // Draw the mesh.
-            meshList[ objectList[ i ].type ]->draw();
+            meshList[ objectList[ i ].type ]->draw(objectList[ i ].side);
             
             glPopMatrix();
         }
         glPopMatrix();
         
+        glDisable(GL_DEPTH_TEST);
         glDisable(GL_STENCIL_TEST);
         glDisable(GL_LIGHTING);
         
         // Draw the surface of the chess board.
         glEnable(GL_TEXTURE_2D);
-	    glBindTexture(GL_TEXTURE_2D, _textureId);
+	    
         glEnable( GL_BLEND );
         glBlendFunc( GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA );
         glBegin( GL_QUADS );
@@ -399,7 +394,7 @@ class ChessBoard {
                 }
                 glEnd();
                 //draw the destination squere
-                if(dRow == x && dCol == z){
+                if(dRow == z && dCol == x){
                     glBegin( GL_QUADS );
                     glColor4f( 1.0,0.5,0.3,1 - alpha);
                     glTexCoord2f(0.5,0.25);
@@ -428,7 +423,7 @@ class ChessBoard {
             glPushMatrix();
             objectList[ i ].trans.glMult();
             // Draw the mesh.
-            meshList[ objectList[ i ].type ]->draw();
+            meshList[ objectList[ i ].type ]->draw(objectList[ i ].side);
             glPopMatrix();
         }
         glPopMatrix();
@@ -453,23 +448,12 @@ class ChessBoard {
         glEnable( GL_DEPTH_TEST );
         glEnable(GL_LIGHTING);
         // Draw everything on the board.
-        glMaterialfv(GL_FRONT, GL_AMBIENT, mat_ambient);   
-        glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse2);   
-        glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);     
-        glMaterialfv(GL_FRONT, GL_EMISSION, mat_diffuse2);
         for ( int i = 0; i < objectList.size(); i++ ) {
-            if(i == objectList.size() / 2){
-                //the other side
-                glMaterialfv(GL_FRONT, GL_AMBIENT, mat_ambient);   
-                glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse1);   
-                glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);    
-                glMaterialfv(GL_FRONT, GL_EMISSION, mat_diffuse1);
-            }
-            
+                        
             if (selection == i) {//this is for the piece that is chosen
-                glMaterialfv(GL_FRONT, GL_SHININESS, no_shininess); 
+                glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, no_shininess); 
             }else{
-                glMaterialfv(GL_FRONT, GL_SHININESS, low_shininess); 
+                glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, low_shininess); 
             }
 
             Object &obj = objectList[ i ];
@@ -479,7 +463,7 @@ class ChessBoard {
                 glPushName(i);
             glPushMatrix();
             obj.trans.glMult();
-            meshList[ objectList[ i ].type ]->draw();
+            meshList[ objectList[ i ].type ]->draw(objectList[ i ].side);
             glPopMatrix();
         }
 
@@ -779,15 +763,14 @@ public:
     }
 
     void initLight(){
-        GLfloat ambient[] = { 0.0, 0.0, 0.0, 1.0 };   
+        GLfloat ambient[] = { 0.5, 0.5, 0.5, 1.0 };   
         GLfloat diffuse[] = { 1.0, 1.0, 1.0, 1.0 };    
-        GLfloat position[] = { 1, 4, 1, 0.0 };   
        
         glEnable(GL_DEPTH_TEST); 
        
         glLightfv(GL_LIGHT0, GL_AMBIENT, ambient);   
         glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);   
-        glLightfv(GL_LIGHT0, GL_POSITION, position);   
+        glLightfv(GL_LIGHT0, GL_POSITION, lightPosition);   
        
         glEnable(GL_LIGHTING);   
         glEnable(GL_LIGHT0);  
@@ -853,12 +836,12 @@ public:
             undoList[size - 1]->setType(UNDO);
             finishAllMove();
             activeList.push_back(pair<int, Move *>(ert,undoList[ size - 1]));
-            sRow = activeList[activeList.size() - 1].second->dCol;
-            sCol = activeList[activeList.size() - 1].second->dRow;
+            sCol = activeList[activeList.size() - 1].second->dCol;
+            sRow = activeList[activeList.size() - 1].second->dRow;
             dRow = sRow;
             dCol = sCol;
-            createPiece(CROSS, 0, dRow, dCol);
-            board[sRow][sCol] = activeList[activeList.size() - 1].second->index;
+            createPiece(CROSS, 0, dCol, dRow);
+            board[sCol][sRow] = activeList[activeList.size() - 1].second->index;
             board[activeList[activeList.size() - 1].second->
                 sCol][activeList[activeList.size() - 1].second->sRow] = EMPTY_CELL;
             selection = -1;
@@ -886,9 +869,10 @@ public:
                 for(int k = 0; k < BOARD_SIZE * BOARD_SIZE; k++){
                     int i = k / BOARD_SIZE;
                     int j = k % BOARD_SIZE;
+                    
                     if(board[i][j] == selection){
-                        sRow = i;
-                        sCol = j;
+                        sCol = i;
+                        sRow = j;
                         break;
                     }
                 }
@@ -919,7 +903,6 @@ public:
                 // so here are the desired (x, z) coordinates
                 GLint wx = nx + (fx - nx) * t,
                     wz = nz + (fz - nz) * t;
-                
                 if (wx < 0 || wz < 0 || wx >= BOARD_SIZE || wz >= BOARD_SIZE) {
                     // clicked outside the board, cancel current selection
                     selection = -1;
@@ -930,50 +913,50 @@ public:
                     // wx, wz and there is for sure some piece selected is in "selection")
                     
                     // the click is in the board, make the move!
-                    if(board[wx][wz] != EMPTY_CELL){
+                    dCol = wx;
+                    dRow = wz;
+                    if(board[dCol][dRow] != EMPTY_CELL){
                         cout << "cell is full" << endl;
                         return;
                     }
-                    int i= wx, j = wz;
+                    
                     if(objectList[selection].type != KNIGHT){
-                        if(i == sRow && j == sCol)
+                        if(dRow  == sRow && dCol == sCol)
                             return;
-                        dRow = i;
-                        dCol = j;
-                        createPiece(CROSS, 0, dRow, dCol);
-                        Move *p = new Other_Move(selection,sRow,sCol,dRow,dCol,FIRST,this);
+                        
+                        if(moveable(objectList[selection].type, objectList[selection].side,
+                            sCol, sRow, dCol, dRow) == false)
+                            return;
+
+                        createPiece(CROSS, 0, dCol, dRow);
+                        Move *p = new Other_Move(selection,sCol,sRow,dCol,dRow,FIRST,this);
                         int ert = glutGet( GLUT_ELAPSED_TIME );
                         p->setDuration(500 * (abs(sRow - dRow) + abs(sCol -dCol) ));
                     
                         finishAllMove();
                         activeList.push_back(pair<int, Move *>(ert,p));
                         
-                        dRow = i;
-                        dCol = j;
-                        board[sRow][sCol] = EMPTY_CELL;
-                        board[dRow][dCol] = selection;
+                        dCol = wx;
+                        dRow = wz;
+                        board[sCol][sRow] = EMPTY_CELL;
+                        board[dCol][dRow] = selection;
                     
                         sRow = dRow;
                         sCol = dCol;
                     }else{
-                        //cout<<"KNIGHT"<<endl;
-                        if(abs(i - sRow) + abs(j - sCol) != 3 || (i == sRow || j == sCol) )
+                        if(abs(dRow - sRow) + abs(sCol - dCol) != 3 || (dRow == sRow || dCol == sCol) )
                             return;
-                    
-                        dRow = i;
-                        dCol = j;
-                        createPiece(CROSS, 0, dRow, dCol);
-                        Move *p = new Knight_Move(selection,sRow,sCol,
-                                    dRow,dCol, FIRST,this);
+                        createPiece(CROSS, 0, dCol, dRow);
+                        Move *p = new Knight_Move(selection,sCol,sRow,dCol,dRow, FIRST,this);
                         int ert = glutGet( GLUT_ELAPSED_TIME );
                         p->setDuration(500 * 3);
                     
                         finishAllMove();
                         activeList.push_back(pair<int, Move *>(ert,p));
-                        dRow = i;
-                        dCol = j;
-                        board[sRow][sCol] = EMPTY_CELL;
-                        board[dRow][dCol] = selection;
+                        dCol = wx;
+                        dRow = wz;
+                        board[sCol][sRow] = EMPTY_CELL;
+                        board[dCol][dRow] = selection;
                         sRow = dRow;
                         sCol = dCol;
                     }//end for knight section
@@ -989,6 +972,141 @@ public:
         for(int i = 0; i < activeList.size(); i++){
             activeList[i].second->finish();
             activeList[i].first -= activeList[i].second->duration();
+        }
+    }
+
+    /*
+    * check whether a destination is avaibale
+    * para:
+    *   Type: the type of piece
+    *   side: which side the piece belong to, it's used for PAWN
+    *   (sCol, sRow) the start point
+    *   (dCol, sRow) the End point
+    * return: true if the movement is legal, false if it's illegal
+    */
+    bool moveable(PieceType type, int side,int sCol, int sRow, int dCol, int dRow){
+        switch (type){
+        case PAWN:
+            if(side == 0){
+                if(dRow - sRow != 1 || dCol != sCol)
+                    return false;
+                else
+                    return true;
+            }else{
+                if(dRow - sRow != -1 || dCol != sCol)
+                    return false;
+                else
+                    return true;
+            }
+            break;
+        case ROOK:
+            if(sCol != dCol && sRow != dRow)
+                return false;
+            if(sCol != dCol){
+                for(int i = min(sCol,dCol); i <= max(sCol,dCol); i++){
+                    if(i == sCol)
+                        continue;
+                    if(board[i][sRow] != EMPTY_CELL)
+                        return false;
+                }
+            }
+            if(sRow != dRow){
+                for(int i = min(sRow,dRow); i <= max(sRow,dRow); i++){
+                    if(i == sRow)
+                        continue;
+                    if(board[sCol][i] != EMPTY_CELL)
+                        return false;
+                }
+            }
+            return true;
+            break;
+        case QUEEN:
+            if(abs(sRow - dRow) != abs(sCol - dCol) && sCol != dCol && sRow != dRow)
+                return false;
+            int begX,begZ,endX,endZ;
+            if(abs(sRow - dRow) == abs(sCol - dCol)){
+                if((sCol - dCol) * (sRow - dRow) > 0){
+                    begX = min(sCol,dCol);
+                    begZ = min(sRow,dRow);
+                    endX = max(sCol,dCol);
+                    endZ = max(sRow,dRow);
+                    for(int i = begX, j = begZ; i <= endX && j <= endZ; i++,j++){
+                        if(i == sCol && j ==sRow)
+                            continue;
+                        if(board[i][j] != EMPTY_CELL)
+                            return false;
+                    }
+                }else{
+                    begX = min(sCol,dCol);
+                    begZ = max(sRow,dRow);
+                    endX = max(sCol,dCol);
+                    endZ = min(sRow,dRow);
+                    for(int i = begX, j = begZ; i <= endX && j >= endZ; i++,j--){
+                        if(i == sCol && j ==sRow)
+                            continue;
+                        if(board[i][j] != EMPTY_CELL)
+                            return false;
+                    }
+                }
+            }
+            if(sCol == dCol || sRow == dRow){
+                if(sCol != dCol){
+                    for(int i = min(sCol,dCol); i <= max(sCol,dCol); i++){
+                        if(i == sCol)
+                            continue;
+                        if(board[i][sRow] != EMPTY_CELL)
+                            return false;
+                    }
+                }
+                if(sRow != dRow){
+                    for(int i = min(sRow,dRow); i <= max(sRow,dRow); i++){
+                        if(i == sRow)
+                            continue;
+                        if(board[sCol][i] != EMPTY_CELL)
+                            return false;
+                    }
+                }
+            }
+            return true;
+            break;
+        case KING:
+            if(abs(sRow - dRow) + abs(sCol - dCol) == 1)
+                return true;
+            else
+                return false;
+            break;
+        case BISHOP:
+            if(abs(sRow - dRow) != abs(sCol - dCol))
+                return false;
+            
+            if((sCol - dCol) * (sRow - dRow) > 0){
+                begX = min(sCol,dCol);
+                begZ = min(sRow,dRow);
+                endX = max(sCol,dCol);
+                endZ = max(sRow,dRow);
+                for(int i = begX, j = begZ; i <= endX && j <= endZ; i++,j++){
+                    if(i == sCol && j ==sRow)
+                        continue;
+                    if(board[i][j] != EMPTY_CELL)
+                        return false;
+                }
+            }else{
+                begX = min(sCol,dCol);
+                begZ = max(sRow,dRow);
+                endX = max(sCol,dCol);
+                endZ = min(sRow,dRow);
+                for(int i = begX, j = begZ; i <= endX && j >= endZ; i++,j--){
+                    if(i == sCol && j ==sRow)
+                        continue;
+                    if(board[i][j] != EMPTY_CELL)
+                        return false;
+                }
+            }
+            return true;
+            break;
+        default:
+            return false;
+            break;
         }
     }
 

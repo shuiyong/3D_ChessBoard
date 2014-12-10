@@ -3,7 +3,8 @@
 * Programming Assignment 6 ChessMate II the Sqeual
 * Author: Yong Shui, Peter Smrcek
 * Due: Dec 9th,2014
-* The parts we have completed
+* version: submission_1.1
+* The portions we have completed
 * 1.	Textured Pieces
 * 2.	Reflective Board
 * 3.	Piece Animation

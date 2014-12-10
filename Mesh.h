@@ -3,6 +3,12 @@
 * Programming Assignment 6 ChessMate II the Sqeual
 * Author: Yong Shui, Peter Smrcek
 * Due: Dec 9th,2014
+* version: submission_1.1
+* The portions we have completed
+* 1.	Textured Pieces
+* 2.	Reflective Board
+* 3.	Piece Animation
+* 4.	Piece Movement
 */
 #ifndef __MESH_H__
 #define __MESH_H__
@@ -26,7 +32,7 @@ class Mesh {
     virtual ~Mesh();
   
     /** Draw all the polygon faces in this mesh. */
-    void draw();
+    void draw(int side);
 
  private:
      vector<Vector> *vlist;
